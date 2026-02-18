@@ -13,7 +13,7 @@ Aligned C Vector Extension single-header math library
 ### TODO
 - use bit_ceil and align modes
 - array initializer list duplicate for copy assign for types of arbitrary length
-- emulataed recursion iteration based on __COUNTER__ for integer sequence
+- emulated recursion iteration based on `__COUNTER__` for integer sequence
 - determinant, laplace expansion and cross4 
 - levi-civita symbol
 - generic n-dim hodge star operator
