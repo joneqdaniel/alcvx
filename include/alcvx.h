@@ -6,17 +6,16 @@
 #include <sys/param.h>
 #include <stdarg.h>
 #include <string.h>
+#include "macros.h"
 
-#define PARENS ()
-#define EXPAND(...) EXPAND4(EXPAND4(EXPAND4(EXPAND4(__VA_ARGS__))))
-#define EXPAND4(...) EXPAND3(EXPAND3(EXPAND3(EXPAND3(__VA_ARGS__))))
-#define EXPAND3(...) EXPAND2(EXPAND2(EXPAND2(EXPAND2(__VA_ARGS__))))
-#define EXPAND2(...) EXPAND1(EXPAND1(EXPAND1(EXPAND1(__VA_ARGS__))))
-#define EXPAND1(...) __VA_ARGS__
+#define vec_ext(T,N) typeof(T __attribute__((vector_size(sizeof(T) * N))))
+#define vec(T,N) typeof(T[N])
 
 #undef countof
-#define countof(x) sizeof(typeof((x)))/sizeof(typeof((x)[0])) 
-#define cnt(...) sizeof((typeof(__VA_ARGS__)[]){__VA_ARGS__})/sizeof(__VA_ARGS__)
+#define countof(a) (sizeof((a))/sizeof((a)[0]))
+#define isarray(arg) __builtin_choose_expr(__builtin_types_compatible_p(typeof(arg[0]) [], typeof(arg)), true, false)
+#define countargs(...) (0 __VA_OPT__(+sizeof((typeof(__VA_ARGS__)[]){__VA_ARGS__})/sizeof(__VA_ARGS__)))
+#define emptyargs(...) (true __VA_OPT__(-1))
 
 #define BITOP_RUP01__(x) (             (x) | (             (x) >>  1))
 #define BITOP_RUP02__(x) (BITOP_RUP01__(x) | (BITOP_RUP01__(x) >>  2))
@@ -26,27 +25,13 @@
 
 #define BIT_CEIL(x) (BITOP_RUP16__(((uint32_t)(x)) - 1) + 1)
 
-#if   defined(__clang__)
-#define vec(T,N) typeof(T __attribute__((ext_vector_type(N))))
-#elif defined(__GNUC__)
-#define vec(T,N) typeof(T __attribute__((vector_size(sizeof(T) * BIT_CEIL(N)))))
-#elif defined(_MSC_VER)
-#define vec(T,N) typeof(T __declspec((align(sizeof(T)*BIT_CEIL(N))))[BIT_CEIL(N)])
-#warn "Your compiler doens't support vector extensions."
-#warn "Using aligned arrays without operators instead."
-#else
-#define vec(T,N) typeof(T __attribute__((aligned(sizeof(T)*BIT_CEIL(N))))[BIT_CEIL(N)])
-#warn "Your compiler doens't support vector extensions."
-#warn "Using aligned arrays without operators instead."
-#endif
-
 #define ALCVX(src,n) (*(vec(typeof(src[0]),n)*)src)
 
 #define sum(a,n,i) \
 ({ \
 typeof((a)[0]) dst = i; \
 _Pragma("omp simd reduction(+:dst)") \
-for(size_t j = 0; j < MIN(cnt(a),n); j++) \
+for(size_t j = 0; j < MIN(countargs(a),n); j++) \
 	dst += (a)[j]; \
 dst; \
 })
@@ -55,19 +40,20 @@ dst; \
 ({ \
 typeof((a)[0]) dst = i; \
 _Pragma("omp simd reduction(+:dst)") \
-for(size_t j = 0; j < MIN(MIN(cnt(a),cnt(b)),n); j++) \
+for(size_t j = 0; j < MIN(MIN(countargs(a),countargs(b)),n); j++) \
 	dst += (a)[j] * (b)[j]; \
 dst; \
 })
 
+
 #define minor(x,y,...) ({ \
-vec(typeof(__VA_ARGS__), cnt(__VA_ARGS__)-1) dst[cnt(__VA_ARGS__)-1]; \
-for(size_t i = 0; i < cnt(__VA_ARGS__)-1; i++) \
-	for(size_t j = 0; j < cnt(__VA_ARGS__)-1; j++) \
-		dst[i][j] = (i <  x && j <  y) ? (vec(typeof(__VA_ARGS__),cnt(__VA_ARGS__))[cnt(__VA_ARGS__)]){__VA_ARGS__}[i  ][j  ] : \
- 	                    (i >= x && j <  y) ? (vec(typeof(__VA_ARGS__),cnt(__VA_ARGS__))[cnt(__VA_ARGS__)]){__VA_ARGS__}[i+1][j  ] : \
-	                    (i <  x && j >= y) ? (vec(typeof(__VA_ARGS__),cnt(__VA_ARGS__))[cnt(__VA_ARGS__)]){__VA_ARGS__}[i  ][j+1] : \
-		                                 (vec(typeof(__VA_ARGS__),cnt(__VA_ARGS__))[cnt(__VA_ARGS__)]){__VA_ARGS__}[i+1][j+1]; \
+vec(typeof(__VA_ARGS__), countargs(__VA_ARGS__)-1) dst[countargs(__VA_ARGS__)-1]; \
+for(size_t i = 0; i < countargs(__VA_ARGS__)-1; i++) \
+	for(size_t j = 0; j < countargs(__VA_ARGS__)-1; j++) \
+		dst[i][j] = (i <  x && j <  y) ? (vec(typeof(__VA_ARGS__),countargs(__VA_ARGS__))[countargs(__VA_ARGS__)]){__VA_ARGS__}[i  ][j  ] : \
+ 	                    (i >= x && j <  y) ? (vec(typeof(__VA_ARGS__),countargs(__VA_ARGS__))[countargs(__VA_ARGS__)]){__VA_ARGS__}[i+1][j  ] : \
+	                    (i <  x && j >= y) ? (vec(typeof(__VA_ARGS__),countargs(__VA_ARGS__))[countargs(__VA_ARGS__)]){__VA_ARGS__}[i  ][j+1] : \
+		                                 COUNTO(vec(typeof(__VA_ARGS__),countargs(__VA_ARGS__))[countargs(__VA_ARGS__)]){__VA_ARGS__}[i+1][j+1]; \
 dst; })
 
 #define sum3(a) sum(a,3,0)
@@ -78,8 +64,8 @@ dst; })
 #define perm(a,...) { __VA_OPT__(EXPAND(perm_helper(a,__VA_ARGS__))) }
 #define perm_helper(a,i,...) (a)[i], __VA_OPT__(perm_again PARENS (a,__VA_ARGS__))
 #define perm_again() perm_helper
-#define perm3(a,...) (vec(typeof((a)[0]),3))perm(a,__VA_ARGS__)
-#define perm4(a,...) (vec(typeof((a)[0]),4))perm(a,__VA_ARGS__)
+#define perm3(a,x,y,z) (vec(typeof((a)[0]),3))perm(a,x,y,z)
+#define perm4(a,x,y,z,w) (vec(typeof((a)[0]),4))perm(a,x,y,z,w)
 
 #define cross3(a,b) \
   perm3(a,1,2,0) * perm3(b,2,0,1) \
