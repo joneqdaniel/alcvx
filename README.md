@@ -12,7 +12,8 @@ Aligned C Vector Extension single-header math library
 
 ### TODO
 - use bit_ceil and align modes
-- array initializer list duplicate for copy assign for types of arbitrary length
+- array initializer list duplicate for copy assign for types of arbitrary
+  length based on [HolyBlackCat/macro_sequence_for](https://github.com/HolyBlackCat/macro_sequence_for)
 - emulated recursion iteration based on `__COUNTER__` for integer sequence
 - determinant, laplace expansion and cross4 
 - levi-civita symbol
