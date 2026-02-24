@@ -130,6 +130,12 @@ for(size_t j = 0; j < MIN(MIN(countof(a),countof(b)),n); j++) \
 dst; \
 })
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+ *       duplicate/copy array/vector types using       *
+ *       the aligned to power of 2 padded vec_ext      *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#define dup_ext(dst,src) (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0])
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * TODO: Implement indexed sequence for arbitrary n    *
  *                                                     *
@@ -139,12 +145,7 @@ dst; \
  * make indexed sequence unrolling for loop based on   *
  * boilerplates.                                       *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * 
- *       duplicate/copy array/vector types using       *
- *       the aligned to power of 2 padded vec_ext      *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#define dup_ext(dst,src) (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0])
+#define dup (a) { (a)[0]...(a)[countof(a)-1]                                     }
 
 /* define 2 to 8-dimensional vector operations */
 #define dup2(a) { (a)[0], (a)[1]                                                 }
@@ -154,7 +155,6 @@ dst; \
 #define dup6(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]                 }
 #define dup7(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6]         }
 #define dup8(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6], (a)[7] }
-#define dup (a) { (a)[0]...(a)[countof(a)-1]                                     }
 
 #define perm2(a,x,y    ) (vec_ext(typeof((a)[0]),2))perm(a,x,y    )
 #define perm3(a,x,y,z  ) (vec_ext(typeof((a)[0]),3))perm(a,x,y,z  )
@@ -168,6 +168,11 @@ dst; \
 #define dot3(a,b)         dot(a,b,3,0)
 #define dot4(a,b)         dot(a,b,4,0)
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                     *
+ *              cross/hodge vector products            *
+ *                                                     *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #define cross2(a,d) ((d & 0x1) ? -1 : 1) * perm2(a,1,0)
 
 /* cross3 - 3-dimensional vector product for vector extension types only
@@ -182,6 +187,7 @@ dst; \
 - perm3(a,2,1,0) * perm3(b,1,2,0)
 
 
+/*
 #define minor(x,y,...) ({ \
 vec(typeof(__VA_ARGS__), countargs(__VA_ARGS__)-1) dst[countargs(__VA_ARGS__)-1]; \
 for(size_t i = 0; i < countargs(__VA_ARGS__)-1; i++) \
@@ -192,7 +198,6 @@ for(size_t i = 0; i < countargs(__VA_ARGS__)-1; i++) \
 		                                 COUNTO(vec(typeof(__VA_ARGS__),countargs(__VA_ARGS__))[countargs(__VA_ARGS__)]){__VA_ARGS__}[i+1][j+1]; \
 dst; })
 
-/*
 #define cross4(a,b,c) (vec(typeof((a)[0]),4))\
 { det(perm3(a,1,2,3), perm3(b,1,2,3), perm3(c,1,2,3)), \
  -det(perm3(a,0,2,3), perm3(b,0,2,3), perm3(c,0,2,3)), \
