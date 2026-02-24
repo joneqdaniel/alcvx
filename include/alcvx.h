@@ -81,23 +81,15 @@ typedef vecf_t         vec_t;
 #define perm_helper(a,i,...) (a)[i], __VA_OPT__(perm_again PARENS (a,__VA_ARGS__))
 #define perm_again()         perm_helper
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO: Implement indexed sequence for arbitrary n    *
- *                                                     *
- * https://github.com/HolyBlackCat/macro_sequence_for  *
- *                                                     *
- * duplicate array using initializer list and          * 
- * make indexed sequence unrolling for loop based on   *
- * boilerplates.                                       *
- *                                                     *
- *                                                     *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#define     dup(a  ) { (a)[0]...(a)[countof(a)-1] };
-
+#pragma pack(push,1)
 /* define different array types */
 #define     arr(T,N) typeof(T[N]) /* fixed static array of arbitrary length and type */
+#pragma pack(pop)
+#pragma pack(push,1)
 #define     vla(T  ) typeof(T[ ]) /* variable length array - VLA */
+#pragma pack(pop)
 
+#pragma pack(push,1)
 /* define vector extension power of 2 sized SIMD vector types for non MSVC */
 #ifndef _MSC_VER
 #ifdef __clang__
@@ -106,6 +98,7 @@ typedef vecf_t         vec_t;
 #define vec_ext(T,N) typeof(T __attribute__((vector_size(bitceil(alignof(T) * N)))))
 #endif
 #endif
+#pragma pack(pop)
 
 #ifndef vec
 #define vec(T,N) arr(T,N)
@@ -137,6 +130,22 @@ for(size_t j = 0; j < MIN(MIN(countof(a),countof(b)),n); j++) \
 dst; \
 })
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * TODO: Implement indexed sequence for arbitrary n    *
+ *                                                     *
+ * https://github.com/HolyBlackCat/macro_sequence_for  *
+ *                                                     *
+ * duplicate array using initializer list and          * 
+ * make indexed sequence unrolling for loop based on   *
+ * boilerplates.                                       *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+ *       duplicate/copy array/vector types using       *
+ *       the aligned to power of 2 padded vec_ext      *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#define dup_ext(dst,src) (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0])
+
 /* define 2 to 8-dimensional vector operations */
 #define dup2(a) { (a)[0], (a)[1]                                                 }
 #define dup3(a) { (a)[0], (a)[1], (a)[2]                                         }
@@ -145,6 +154,7 @@ dst; \
 #define dup6(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]                 }
 #define dup7(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6]         }
 #define dup8(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6], (a)[7] }
+#define dup (a) { (a)[0]...(a)[countof(a)-1]                                     }
 
 #define perm2(a,x,y    ) (vec_ext(typeof((a)[0]),2))perm(a,x,y    )
 #define perm3(a,x,y,z  ) (vec_ext(typeof((a)[0]),3))perm(a,x,y,z  )
