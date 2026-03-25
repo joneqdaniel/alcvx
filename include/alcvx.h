@@ -65,7 +65,7 @@ typedef vecf_t         vec_t;
 #define BITOP_RUP08__(x) (BITOP_RUP04__(x) | (BITOP_RUP04__(x) >>  8))
 #define BITOP_RUP16__(x) (BITOP_RUP08__(x) | (BITOP_RUP08__(x) >> 16))
 
-#define bitceil(x) (BITOP_RUP16__(((uint32_t)(x)) - 1) + 1)
+#define bitceil(x) (const uint32_t)(BITOP_RUP16__(((uint32_t)(x)) - 1) + 1)
 
 /* define array verification and element count */
 #undef  countof
@@ -95,7 +95,7 @@ typedef vecf_t         vec_t;
 #ifdef __clang__
 #define vec_ext(T,N) typeof(T __attribute__((ext_vector_type(N))))
 #else
-#define vec_ext(T,N) typeof(T __attribute__((vector_size(bitceil(alignof(T) * N)))))
+#define vec_ext(T,N) typeof(T __attribute__((vector_size(bitceil(alignof(T) * N))))
 #endif
 #endif
 #pragma pack(pop)
@@ -134,7 +134,7 @@ dst; \
  *       duplicate/copy array/vector types using       *
  *       the aligned to power of 2 padded vec_ext      *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#define dup_ext(dst,src) (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0])
+#define dup_ext(dst,src) ({ (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0]); dst; })
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * TODO: Implement indexed sequence for arbitrary n    *

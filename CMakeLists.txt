@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.10 )
 
-project( alcvx VERSION 0.1 LANGUAGES C )
+project( alcvx VERSION 0.1 LANGUAGES CXX C)
 set(PROJECT_DESCRIPTION "Aligned C Vector Extension single-header math library")
 
 include(GNUInstallDirs)
@@ -11,6 +11,8 @@ endif()
 
 set( CMAKE_C_STANDARD 23 )
 set( CMAKE_C_STANDARD_REQUIRED ON )
+set( CMAKE_CXX_STANDARD 26)
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 if( CMAKE_BUILD_TYPE EQUAL Debug )
 	add_compile_options(-g)
@@ -31,7 +33,6 @@ add_compile_options(-Wno-array-bounds)
 add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-pedantic)
 add_compile_options(-Wno-narrowing)
-add_compile_options(-Wno-int-conversion)
 add_link_options(-Wl,--gc-sections)
 add_link_options(-Wl,--print-gc-sections)
 add_link_options(-Wl,-s)
@@ -44,6 +45,6 @@ target_include_directories( alcvx INTERFACE
 
 install(FILES ${PROJECT_SOURCE_DIR}/include/alcvx.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT headers)
 
-add_executable( example examples/example.c )
+add_executable( example examples/example.cpp )
 target_link_libraries( example alcvx )
 

@@ -34,12 +34,12 @@ vec(f32,3) b = dup(a);
 
 int main(int argc, char** argv)
 {
-     vec3_t src = { 1,2,3 };
-    avec3_t dst = ALCVX(src,3);
+     vec(u16,3) src[2] = { {1,2,3}, {4,5,6} };
+     vec(u16,3) dst;
+     dup_ext(dst,src[0]);
+     printf("%hu %hu %hu %hu\n", dst[0],dst[1],dst[2],dst[3]);
 
-    dst *= ALCVX(src,3);
-    src = dst;
-    exit(EXIT_SUCCESS);
+     exit(EXIT_SUCCESS);
 }
 ```
 
