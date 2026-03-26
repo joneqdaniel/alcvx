@@ -45,6 +45,6 @@ target_include_directories( alcvx INTERFACE
 
 install(FILES ${PROJECT_SOURCE_DIR}/include/alcvx.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT headers)
 
-add_executable( example examples/example.cpp )
+add_executable( example examples/example.c )
 target_link_libraries( example alcvx )
 

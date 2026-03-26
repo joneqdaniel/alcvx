@@ -68,9 +68,9 @@ typedef vecf_t         vec_t;
 #define bitceil(x) (const uint32_t)(BITOP_RUP16__(((uint32_t)(x)) - 1) + 1)
 
 /* define array verification and element count */
+#define isarray(a  ) __builtin_choose_expr(__builtin_types_compatible_p(typeof((a)[0]) [], typeof((a))), true, false)
 #undef  countof
 #define countof(a  ) (sizeof((a))/sizeof((a)[0]))
-#define isarray(a  ) __builtin_choose_expr(__builtin_types_compatible_p(typeof((a)[0]) [], typeof((a))), true, false)
 
 /* define variable argument macros */
 #define countargs(...) (0 __VA_OPT__(+sizeof((typeof(__VA_ARGS__)[]){__VA_ARGS__})/sizeof(__VA_ARGS__)))
@@ -95,7 +95,7 @@ typedef vecf_t         vec_t;
 #ifdef __clang__
 #define vec_ext(T,N) typeof(T __attribute__((ext_vector_type(N))))
 #else
-#define vec_ext(T,N) typeof(T __attribute__((vector_size(bitceil(alignof(T) * N))))
+#define vec_ext(T,N) typeof(T __attribute__((vector_size(bitceil((alignof(T) * N)))))
 #endif
 #endif
 #pragma pack(pop)
@@ -111,11 +111,11 @@ typedef vecf_t         vec_t;
  * * * * * * * * * * * * * * */
 #define sum(a,n,i) \
 ({ \
-typeof((a)[0]) dst = i; \
-_Pragma("omp simd reduction(+:dst)") \
+typeof((a)[0]) _dst = i; \
+_Pragma("omp simd reduction(+:_dst)") \
 for(size_t j = 0; j < MIN(countof(a),n); j++) \
-        dst += (a)[j]; \
-dst; \
+        _dst += (a)[j]; \
+_dst; \
 })
 
 /* * * * * * * * * * * * * * *
@@ -123,18 +123,23 @@ dst; \
  * * * * * * * * * * * * * * */
 #define dot(a,b,n,i) \
 ({ \
-typeof((a)[0]) dst = i; \
-_Pragma("omp simd reduction(+:dst)") \
+typeof((a)[0]) _dst = i; \
+_Pragma("omp simd reduction(+:_dst)") \
 for(size_t j = 0; j < MIN(MIN(countof(a),countof(b)),n); j++) \
-        dst += (a)[j] * (b)[j]; \
-dst; \
+        _dst += (a)[j] * (b)[j]; \
+_dst; \
 })
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * 
  *       duplicate/copy array/vector types using       *
  *       the aligned to power of 2 padded vec_ext      *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#define dup_ext(dst,src) ({ (*(vec_ext(typeof((src)[0]),countof(src))*)&(dst)[0]) = (*(vec_ext(typeof((src)[0]),countof(src))*)&(src)[0]); dst; })
+#define dup(_dst,src) ({ \
+_Pragma("omp simd") \
+for(size_t j = 0; j < MIN(countof(src),countof(_dst)); j++) \
+(_dst)[j] = (src)[j]; \
+(*((vec_ext(typeof((_dst)[0]),countof(_dst))*)&(_dst)[0])); \
+})
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * TODO: Implement indexed sequence for arbitrary n    *
@@ -145,7 +150,7 @@ dst; \
  * make indexed sequence unrolling for loop based on   *
  * boilerplates.                                       *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#define dup (a) { (a)[0]...(a)[countof(a)-1]                                     }
+//#define dup (a) { (a)[0]...(a)[countof(a)-1]                                     }
 
 /* define 2 to 8-dimensional vector operations */
 #define dup2(a) { (a)[0], (a)[1]                                                 }
@@ -156,17 +161,17 @@ dst; \
 #define dup7(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6]         }
 #define dup8(a) { (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5], (a)[6], (a)[7] }
 
-#define perm2(a,x,y    ) (vec_ext(typeof((a)[0]),2))perm(a,x,y    )
-#define perm3(a,x,y,z  ) (vec_ext(typeof((a)[0]),3))perm(a,x,y,z  )
-#define perm4(a,x,y,z,w) (vec_ext(typeof((a)[0]),4))perm(a,x,y,z,w)
+#define perm2(a,x,y    ) (vec_ext(typeof((a)[0]),2))perm((a),x,y    )
+#define perm3(a,x,y,z  ) (vec_ext(typeof((a)[0]),3))perm((a),x,y,z  )
+#define perm4(a,x,y,z,w) (vec_ext(typeof((a)[0]),4))perm((a),x,y,z,w)
 
-#define sum2(a)           sum(a,2,0)
-#define sum3(a)           sum(a,3,0)
-#define sum4(a)           sum(a,4,0)
+#define sum2(a)           sum((a),2,0)
+#define sum3(a)           sum((a),3,0)
+#define sum4(a)           sum((a),4,0)
 
-#define dot2(a,b)         dot(a,b,2,0)
-#define dot3(a,b)         dot(a,b,3,0)
-#define dot4(a,b)         dot(a,b,4,0)
+#define dot2(a,b)         dot((a),(b),2,0)
+#define dot3(a,b)         dot((a),(b),3,0)
+#define dot4(a,b)         dot((a),(b),4,0)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                     *
